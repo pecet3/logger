@@ -4,56 +4,51 @@ import (
 	"fmt"
 	"runtime"
 	"strconv"
+	"sync"
+	"time"
 )
 
-func debug(args ...interface{}) {
+type Config struct {
+	IsDebugMode bool
+}
+
+type Logger struct {
+	cache map[time.Time]string
+	cMu   sync.Mutex
+
+	// config
+	c *Config
+}
+
+func New(c *Config) *Logger {
+	return &Logger{
+		cache: make(map[time.Time]string),
+		c:     c,
+	}
+}
+
+func (l *Logger) Error(args ...interface{}) {
 	pc, _, line, _ := runtime.Caller(1)
 	fn := runtime.FuncForPC(pc)
 	fName := fn.Name()
 	date := getCurrentDate()
-	time := getCurrentTime()
+	currentTime := getCurrentTime()
 
 	msg := fmt.Sprint(args...)
-	content := fmt.Sprintf(`[%s] %s %s (%s:%s)`,
-		formatTextExt(bold, blue, " LOGGER DEBUG"),
-		formatTextExt(dim, italic, date),
-		formatText(underline, time),
-		formatText(brightBlue, fName),
-		formatText(bold, strconv.Itoa(line)),
+	contentRaw := fmt.Sprintf(`[%s] %s %s (%s:%s)`,
+		" ERROR",
+		date,
+		currentTime,
+		fName,
+		strconv.Itoa(line),
 	)
-	fmt.Println(content)
-	if len(args) > 0 {
-		fmt.Println("↳", formatText(bgBlue, formatTextExt(bold, brightYellow, msg)))
-	}
-
-}
-func Error(args ...interface{}) {
-	pc, _, line, _ := runtime.Caller(1)
-	fn := runtime.FuncForPC(pc)
-	fName := fn.Name()
-	date := getCurrentDate()
-	time := getCurrentTime()
-
-	msg := fmt.Sprint(args...)
-	content := fmt.Sprintf(`[%s] %s %s (%s:%s)`,
-		formatTextExt(bold, red, " ERROR"),
-		formatTextExt(dim, italic, date),
-		formatText(underline, time),
-		formatText(brightBlue, fName),
-		formatText(bold, strconv.Itoa(line)),
-	)
-	fmt.Println(content)
-	if len(args) > 0 {
-		fmt.Println("↳", formatText(bgRed, formatTextExt(bold, brightYellow, msg)))
-	}
-
+	l.addCache(time.Now(), contentRaw)
+	Error(msg)
 }
 
-func Info(args ...interface{}) {
-
+func (l *Logger) Info(args ...interface{}) {
 	date := getCurrentDate()
 	time := getCurrentTime()
-
 	msg := fmt.Sprint(args...)
 	content := fmt.Sprintf(`[%s] %s %s %s`,
 		formatTextExt(bold, brightGreen, " INFO "),
@@ -65,8 +60,7 @@ func Info(args ...interface{}) {
 
 }
 
-func InfoC(args ...interface{}) {
-
+func (l *Logger) InfoC(args ...interface{}) {
 	pc, _, line, _ := runtime.Caller(1)
 	fn := runtime.FuncForPC(pc)
 	fName := fn.Name()
@@ -86,7 +80,7 @@ func InfoC(args ...interface{}) {
 		fmt.Println("↳", formatTextExt(bold, brightYellow, msg))
 	}
 }
-func Warn(args ...interface{}) {
+func (l *Logger) Warn(args ...interface{}) {
 
 	date := getCurrentDate()
 	time := getCurrentTime()
@@ -101,7 +95,7 @@ func Warn(args ...interface{}) {
 	fmt.Println(content)
 }
 
-func WarnC(args ...interface{}) {
+func (l *Logger) WarnC(args ...interface{}) {
 	pc, _, line, _ := runtime.Caller(1)
 	fn := runtime.FuncForPC(pc)
 	fName := fn.Name()
@@ -122,7 +116,7 @@ func WarnC(args ...interface{}) {
 	}
 
 }
-func Debug(args ...interface{}) {
+func (l *Logger) Debug(args ...interface{}) {
 	pc, _, line, _ := runtime.Caller(1)
 	fn := runtime.FuncForPC(pc)
 	fName := fn.Name()
