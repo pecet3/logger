@@ -7,7 +7,7 @@ import (
 	"log"
 	"testing"
 
-	logger "github.com/pecet3/logger/src"
+	"github.com/pecet3/logger"
 )
 
 func TestLogger_Error(t *testing.T) {
